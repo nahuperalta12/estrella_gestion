@@ -1,0 +1,14 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { signOut } from "./actions";
+export const dynamic = "force-dynamic";
+export default async function Home() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return <main className="login-page"><section className="login-card"><h1>Configuraci?n pendiente</h1><p>Conect? Supabase siguiendo las instrucciones del README para comenzar.</p></section></main>;
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) redirect("/ingresar");
+  const { data: profile } = await supabase.from("profiles").select("display_name, role, active").eq("id", user.id).maybeSingle();
+  if (!profile || !profile.active) return <main className="login-page"><section className="login-card"><h1>Acceso no habilitado</h1><p>Tu cuenta todav?a no tiene acceso activo. Contact? a la administraci?n.</p><form action={signOut}><button>Cerrar sesi?n</button></form></section></main>;
+  const admin = profile.role === "admin";
+  return <div className="shell"><aside className="sidebar"><div className="brand"><span className="mark small">?</span><div><strong>Estrella Gesti?n</strong><small>ESTRELLA CARNAVAL</small></div></div><nav aria-label="Navegaci?n principal"><span className="nav-active">Inicio</span></nav><div className="side-bottom"><span>{admin ? "Administraci?n" : "Colaboradora"}</span><form action={signOut}><button className="link-button">Cerrar sesi?n</button></form></div></aside><main className="content"><header><div><p className="eyebrow">TU ESPACIO DE TRABAJO</p><h1>Hola, {profile.display_name}</h1><p className="muted">{admin ? "Panel de administraci?n" : "Tu portal de colaboradora"}</p></div><form action={signOut} className="mobile-signout"><button className="link-button">Cerrar sesi?n</button></form></header><section className="welcome"><div><p className="eyebrow">ESTRELLA GESTI?N</p><h2>Una base para trabajar con claridad.</h2><p>Tu acceso est? habilitado. Los m?dulos de gesti?n se incorporar?n de forma gradual, con informaci?n real y trazable.</p></div><span aria-hidden="true">?</span></section><section className="next"><h2>Pr?ximos m?dulos</h2><p className="muted">Estas funciones todav?a est?n en desarrollo.</p><div className="grid">{(admin ? [["Inventario", "Materiales, compras y movimientos"], ["Producci?n", "Lotes, entregas y seguimiento"], ["Pedidos y finanzas", "Ventas, pagos y resultados"]] : [["Mi producci?n", "Asignaciones y registro diario"], ["Mis materiales", "Entregas y disponibilidad"], ["Mi dinero", "Remuneraciones y pagos"]]).map(([title, text]) => <article className="tile" key={title}><span className="dot"/><h3>{title}</h3><p>{text}</p><small>Pr?ximamente</small></article>)}</div></section></main></div>;
+}

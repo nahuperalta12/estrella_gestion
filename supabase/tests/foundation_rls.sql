@@ -1,0 +1,20 @@
+-- Run with supabase test db against an isolated local Supabase database.
+begin;
+select plan(7);
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-000000000001','admin@example.test'), ('00000000-0000-0000-0000-000000000002','one@example.test'), ('00000000-0000-0000-0000-000000000003','two@example.test'), ('00000000-0000-0000-0000-000000000004','disabled@example.test');
+insert into public.profiles (id, display_name, role, active) values ('00000000-0000-0000-0000-000000000001','Admin','admin',true), ('00000000-0000-0000-0000-000000000002','Una','collaborator',true), ('00000000-0000-0000-0000-000000000003','Otra','collaborator',true), ('00000000-0000-0000-0000-000000000004','Inactiva','collaborator',false);
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
+select is((select count(*) from public.profiles),1::bigint,'collaborator sees only self');
+select ok(not public.is_active_admin(),'collaborator is not admin');
+select throws_ok($$update public.profiles set role='admin'$$,'42501',null,'cannot change role');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
+select is((select count(*) from public.profiles),4::bigint,'admin sees profiles');
+select ok(public.is_active_admin(),'admin is recognized');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000004',true);
+select is((select count(*) from public.profiles),0::bigint,'inactive sees no profiles');
+reset role;
+set local role anon;
+select throws_ok($$select * from public.profiles$$,'42501',null,'anonymous cannot read profiles');
+select * from finish();
+rollback;
