@@ -1,0 +1,18 @@
+name: Verificar base de datos
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.2.0
+      - name: Iniciar base aislada y aplicar migraciones
+        run: supabase start
+      - name: Probar políticas y operaciones
+        run: supabase test db
