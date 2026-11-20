@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
+import vm from "node:vm";
+import ts from "typescript";
+const source=await readFile(new URL("../src/lib/csv.ts",import.meta.url),"utf8");
+const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+const context={exports:{}}; vm.runInNewContext(js,context);
+const {csvCell,toCsv}=context.exports;
+assert.equal(csvCell('a,"b"'), '"a,""b"""');
+assert.equal(csvCell('=1+1'), '"\'=1+1"');
+assert.equal(csvCell(' \t@cmd'), '"\' \t@cmd"');
+assert.equal(csvCell(-20), '"-20"');
+assert.equal(toCsv(["nombre"],[["normal"]]),'\ufeff"nombre"\r\n"normal"\r\n');
+console.log("Pruebas de CSV: correctas.");

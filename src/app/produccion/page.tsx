@@ -1,0 +1,27 @@
+import Link from "next/link";
+import {redirect} from "next/navigation";
+import {createClient} from "@/lib/supabase/server";
+import {AssignmentForm,ProductionForm,RecipeForm,FinishedReceiptForm} from "./forms";
+export const dynamic="force-dynamic";
+export default async function ProductionPage() {
+  const db=await createClient(); const {data:{user}}=await db.auth.getUser(); if(!user) redirect("/ingresar");
+  const {data:profile}=await db.from("profiles").select("role,active").eq("id",user.id).maybeSingle(); if(!profile?.active) redirect("/");
+  const admin=profile.role==="admin";
+  const [assignments,progress,deliveries,records,materials,custody,recipes,items,products,profiles]=await Promise.all([
+    db.from("production_assignments").select("id,collaborator_id,recipe_id,product_label,assigned_quantity,unit_rate,due_on,notes").order("created_at",{ascending:false}).limit(100),
+    db.from("production_assignment_progress").select("id,produced"),
+    db.from("production_delivery_progress").select("id,delivered"),
+    db.from("production_records").select("id,assignment_id,produced_on,quantity,earned").order("created_at",{ascending:false}).limit(100),
+    db.from("materials").select("id,name,unit,active").order("name"),
+    db.from("custody_balances").select("material_id,quantity,collaborator_id"),
+    db.from("product_recipes").select("id,product_id,version").order("version",{ascending:false}),
+    db.from("recipe_items").select("recipe_id,material_id,quantity"),
+    admin ? db.from("products").select("id,name,size,color,active").order("name") : Promise.resolve({data:[],error:null}),
+    admin ? db.from("profiles").select("id,display_name,role,active").order("display_name") : Promise.resolve({data:[],error:null})
+  ]);
+  if([assignments,progress,deliveries,records,materials,custody,recipes,items,products,profiles].some(x=>x.error)) return <main className="content"><Link href="/">← Inicio</Link><h1>Producción no disponible</h1><p>Revisá la conexión y las migraciones de la base de datos.</p></main>;
+  const date=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Argentina/Buenos_Aires",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const productsActive=(products.data ?? []).filter(p=>p.active).map(p=>({id:p.id,name:[p.name,p.size,p.color].filter(Boolean).join(" · ")}));
+  const name=(id:string)=>profiles.data?.find(p=>p.id===id)?.display_name ?? "Colaboradora";
+  return <main className="content"><Link href="/">← Inicio</Link><h1>{admin ? "Producción":"Mi producción"}</h1><p><Link href="/exportar/produccion" download prefetch={false}>Descargar producción CSV</Link></p><p className="muted">La producción usa la receta y tarifa guardadas al asignar el trabajo. Las entregas físicas se registran por separado y suman stock terminado disponible para pedidos.</p>{admin && <div className="grid"><RecipeForm products={productsActive} materials={(materials.data ?? []).filter(m=>m.active)}/><AssignmentForm operationKey={crypto.randomUUID()} workers={(profiles.data ?? []).filter(p=>p.active && p.role==="collaborator").map(p=>({id:p.id,name:p.display_name}))} products={productsActive.filter(p=>recipes.data?.some(r=>r.product_id===p.id))}/></div>}<section className="next"><h2>Asignaciones</h2>{!assignments.data?.length && <p>No hay asignaciones registradas.</p>}{assignments.data?.map(a=>{const produced=Number(progress.data?.find(p=>p.id===a.id)?.produced ?? 0); const remaining=Math.max(0,a.assigned_quantity-produced); const delivered=Number(deliveries.data?.find(d=>d.id===a.id)?.delivered ?? 0); const awaiting=Math.max(0,produced-delivered); return <article className="tile" key={a.id}><h3>{a.product_label}</h3><p>{admin && `${name(a.collaborator_id)} · `}Asignadas: {a.assigned_quantity} · Fabricadas: {produced} · Pendientes: {remaining} · Recibidas: {delivered} · Pendientes de recibir: {awaiting}</p><p>Tarifa: {Number(a.unit_rate).toLocaleString("es-AR",{style:"currency",currency:"ARS"})} por pluma {a.due_on && `· Fecha objetivo: ${a.due_on}`}</p>{a.notes && <p>{a.notes}</p>}{admin && awaiting>0 && <FinishedReceiptForm assignment={a.id} operationKey={crypto.randomUUID()} date={date} remaining={awaiting}/>} {!admin && <><h4>Materiales por pluma</h4><ul>{items.data?.filter(i=>i.recipe_id===a.recipe_id).map(i=>{const m=materials.data?.find(x=>x.id===i.material_id);const available=Number(custody.data?.find(c=>c.material_id===i.material_id && c.collaborator_id===user.id)?.quantity ?? 0);return <li key={i.material_id}>{m?.name ?? "Material pendiente de entrega"}: {Number(i.quantity).toLocaleString("es-AR")} {m?.unit ?? ""} · disponible: {available.toLocaleString("es-AR")}</li>;})}</ul>{remaining>0 && <ProductionForm assignment={a.id} operationKey={crypto.randomUUID()} date={date} remaining={remaining}/>}</>}</article>;})}</section><section className="next"><h2>Últimos registros</h2>{!records.data?.length && <p>No hay producción registrada.</p>}{records.data?.map(r=><article className="tile" key={r.id}><p>{r.produced_on} · {r.quantity} plumas · devengado {Number(r.earned).toLocaleString("es-AR",{style:"currency",currency:"ARS"})}</p></article>)}</section></main>;
+}

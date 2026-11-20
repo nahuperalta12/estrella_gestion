@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:db:isolated": "node scripts/test-database.mjs",
+    "test:conversions": "node scripts/test-conversions.mjs",
+    "test:csv": "node scripts/test-csv.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -17,6 +20,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",

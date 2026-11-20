@@ -1,0 +1,17 @@
+begin;
+select plan(8);
+insert into auth.users (id,email) values ('50000000-0000-0000-0000-000000000001','settings-admin@example.test'), ('50000000-0000-0000-0000-000000000002','settings-worker@example.test');
+insert into public.profiles (id,display_name,role,active) values ('50000000-0000-0000-0000-000000000001','Admin','admin',true), ('50000000-0000-0000-0000-000000000002','Worker','collaborator',true);
+set local role authenticated;
+select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000001',true);
+select is((select holographic_rods_per_kg from public.inventory_settings), 600::numeric, 'initial holographic conversion');
+select is((select glue_grams_per_feather from public.inventory_settings), 3::numeric, 'initial glue consumption');
+select lives_ok($$select public.update_inventory_settings(250, 3.5, 600, 3)$$, 'admin can change settings');
+select is((select glue_grams_per_feather from public.inventory_settings), 3.5::numeric, 'updated value persists');
+select throws_ok($$select public.update_inventory_settings(0, 3, 600, 3)$$, 'P0001', 'invalid settings', 'zero rejected');
+select throws_ok($$update public.inventory_settings set glue_grams_per_pot=1$$, '42501', null, 'direct write denied');
+select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000002',true);
+select is((select count(*) from public.inventory_settings), 0::bigint, 'collaborator cannot read settings');
+select throws_ok($$select public.update_inventory_settings(250,3,600,3)$$, '42501', 'access denied', 'collaborator cannot change settings');
+select * from finish();
+rollback;

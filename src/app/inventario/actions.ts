@@ -4,6 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 export type FormState = { error?: string; success?: string };
+export async function updateMaterial(_: FormState, data: FormData): Promise<FormState> {
+  const parsed = z.object({ id: z.string().uuid(), name: z.string().trim().min(1).max(120), minimum: z.coerce.number().finite().min(0).max(999999999999999).refine(n => Math.abs(n * 1000 - Math.round(n * 1000)) < 1e-7), active: z.boolean() }).safeParse({ id: data.get("id"), name: data.get("name"), minimum: data.get("minimum"), active: data.get("active") === "on" });
+  if (!parsed.success) return { error: "Revisá el nombre y el stock mínimo (hasta tres decimales)." };
+  const db = await createClient();
+  const { error } = await db.rpc("update_material", { p_id: parsed.data.id, p_name: parsed.data.name, p_minimum_stock: parsed.data.minimum, p_active: parsed.data.active });
+  if (error) return { error: "No se pudo guardar el material. Verificá el nombre y tus permisos." };
+  revalidatePath("/inventario");
+  return { success: "Material actualizado." };
+}
 export async function createMaterial(_: FormState, data: FormData): Promise<FormState> {
   const parsed = z.object({ name: z.string().trim().min(1).max(120), unit: z.string().trim().min(1).max(30), minimum: z.coerce.number().min(0).max(999999999999999) }).safeParse({ name: data.get("name"), unit: data.get("unit"), minimum: data.get("minimum") });
   if (!parsed.success) return { error: "Revisá el nombre, la unidad y el stock mínimo." };

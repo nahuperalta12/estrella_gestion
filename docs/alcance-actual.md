@@ -1,0 +1,21 @@
+# Alcance implementado y pendientes
+
+Esta aplicación todavía no está lista para operar el negocio. El documento completo de requisitos está en [documento de inicio](documento-inicio.md).
+
+El administrador puede acceder a «Cargas y ABM» para mantener materiales, proveedores, clientes, productos y parámetros de inventario. La gestión de colaboradoras permite cambiar el nombre y activar o desactivar perfiles; el alta de cuentas requiere la clave de servidor de Supabase configurada. El flujo inicial de compras admite un material por registro, en su unidad de inventario: la compra no modifica el saldo hasta que se confirma la recepción. El flujo inicial de pedidos admite un producto, precio pactado y estado.
+
+Existe un flujo inicial de entregas de un material: el despacho mueve stock del depósito a tránsito y la colaboradora destinataria confirma su recepción en custodia. La producción registrada consume materiales de esa custodia. Las entregas todavía no admiten diferencias ni devoluciones.
+
+El flujo inicial de producción permite crear recetas versionadas, asignar cantidades y tarifas y registrar producción desde la cuenta de la colaboradora. La operación verifica el pendiente y la custodia, registra consumos y devenga la remuneración. El administrador puede registrar la recepción física de plumas fabricadas, que suma stock terminado para pedidos. Los pagos parciales se vinculan a un egreso de caja. No incluye anulación o corrección, etapas, ajuste de consumo, tareas o jornadas, anticipos ni bonificaciones.
+
+Los pedidos iniciales admiten cobros parciales, que registran un ingreso de caja, y entregas parciales que descuentan stock terminado. El estado pasa a entregado al completar la entrega. Las compras admiten pagos parciales vinculados a caja. Los pagos y cobros pueden revertirse íntegramente con un movimiento compensatorio y el saldo correspondiente se restituye; esto debe registrar una corrección o una devolución de dinero ya realizada. Todavía faltan devoluciones de productos y reversiones parciales: un pedido con entregas no puede cancelarse. También faltan compras con múltiples líneas, lotes, conversiones automáticas, transferencias con diferencias y devoluciones, portal completo de colaboradoras, reservas, caja completa, costos, rentabilidad y estadísticas. No utilizar estos flujos iniciales como sistema completo.
+
+Las transformaciones iniciales registran cantidades efectivas de dos materiales distintos en depósito, por ejemplo varillas originales y segmentos. Aún no calculan automáticamente equivalencias ni asignan costos o lotes.
+
+La pantalla de caja presenta los cobros y pagos registrados en esos flujos y permite ingresar otros ingresos o gastos. Los movimientos manuales se pueden revertir allí con un asiento compensatorio; los pagos o cobros vinculados se revierten en su módulo de origen. No incorpora automáticamente un saldo inicial, por lo que la diferencia registrada no necesariamente es el saldo completo del negocio.
+
+El inicio muestra indicadores agregados a partir de los datos disponibles y una calculadora ofrece estimaciones con los parámetros configurados. Las estimaciones no crean movimientos de stock; todavía faltan gráficos, proyecciones y estadísticas completas.
+
+Hay exportaciones CSV de inventario, producción, pagos a colaboradoras y pedidos. Las colaboradoras solo pueden exportar su propia producción y pagos, según RLS; inventario y pedidos son administrativos. Los pagos exportados indican si fueron revertidos. Las exportaciones consultan datos en varias páginas y no constituyen una instantánea transaccional durante cambios concurrentes.
+
+Las migraciones 001 a 022 y pruebas básicas se ejecutaron en PostgreSQL aislado mediante PGlite. Las pruebas de conversión y formato CSV se ejecutan con `npm run test:conversions` y `npm run test:csv`. Quedan pendientes las pruebas del alta de cuentas y de exportación contra la API real, pgTAP sobre Supabase completo y las pruebas de concurrencia. La base remota requiere primero la reconciliación descrita en [estado de migraciones](estado-migraciones.md); no se modificó desde esta entrega.

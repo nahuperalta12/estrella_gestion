@@ -1,0 +1,18 @@
+begin;
+select plan(9);
+insert into auth.users (id,email) values ('60000000-0000-0000-0000-000000000001','catalog-admin@example.test'), ('60000000-0000-0000-0000-000000000002','catalog-worker@example.test');
+insert into public.profiles (id,display_name,role,active) values ('60000000-0000-0000-0000-000000000001','Admin','admin',true), ('60000000-0000-0000-0000-000000000002','Worker','collaborator',true);
+set local role authenticated;
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000001',true);
+select lives_ok($$select public.save_customer(null,'Test client','123',true)$$, 'admin creates customer');
+select lives_ok($$select public.save_product(null,'Test feather','90 cm','natural','',1200,true)$$, 'admin creates product');
+select lives_ok($$select public.save_customer((select id from public.customers where name='Test client'),'Updated client','456',false)$$, 'admin updates customer');
+select is((select active from public.customers where name='Updated client'), false, 'customer deactivated');
+select throws_ok($$select public.save_product(null,'Bad','','','',-1,true)$$, 'P0001', 'invalid product', 'negative price rejected');
+select throws_ok($$delete from public.products$$, '42501', null, 'direct deletion denied');
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000002',true);
+select is((select count(*) from public.customers), 0::bigint, 'collaborator cannot read customers');
+select is((select count(*) from public.products), 0::bigint, 'collaborator cannot read product catalog');
+select throws_ok($$select public.save_customer(null,'Forbidden','',true)$$, '42501', 'access denied', 'collaborator cannot write');
+select * from finish();
+rollback;
