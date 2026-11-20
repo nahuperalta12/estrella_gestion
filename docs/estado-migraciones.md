@@ -1,5 +1,21 @@
 # Estado de migraciones
 
+## Aplicación remota e importación de la hoja 2027
+
+Se verificó la equivalencia de la fundación existente, se registró la migración 001 en el historial y se aplicaron las migraciones 002 a 023 en el proyecto vinculado «Estrella Gestion», usando `--skip-vault`. La comprobación posterior encontró 23 migraciones registradas y las tablas y funciones comerciales esperadas. No se recreó `profiles`.
+
+Se importó exclusivamente la hoja `2027` de la planilla facilitada y se verificó el resultado en la base. Las señas tienen fecha provisoria del pedido; un cobro adicional conserva fecha desconocida y no genera un movimiento de caja fechado. Las entregas históricas sin fecha no descuentan stock actual. Los pedidos mixtos conservan su descripción original sin desglose de inventario. Los detalles comerciales y las aclaraciones se conservan fuera del repositorio.
+
+La migración 023 y la importación pasaron pruebas aisladas, incluyendo repetición sin duplicados y reversión completa ante un error. Las migraciones 001–022 pasaron previamente la suite pgTAP de Supabase en CI; la prueba pgTAP nueva de 023 y las pruebas de concurrencia aún no se ejecutaron en una instancia real aislada. La configuración local apunta al proyecto vinculado, pero no se verificó la configuración de producción de Vercel.
+
+## Actualización del 20 de noviembre de 2026
+
+La consulta de metadatos en modo de solo lectura volvió a conectar con el proyecto remoto vinculado «Estrella Gestion». En el esquema `public` solo se encontró la tabla `profiles` y no existe la tabla del historial de migraciones. No se consultaron registros comerciales ni se modificó la base.
+
+Una consulta adicional que solo lee metadatos, ejecutada a través de la sesión administrativa de la CLI, identificó el rol de conexión `postgres`, con capacidad de crear objetos en `public` e insertar en `profiles`. Por lo tanto, no hace falta pedir nuevas credenciales para acceder al esquema mediante esta sesión. No se ejecutaron escrituras ni se verificó que Vercel use este mismo proyecto.
+
+El [flujo de GitHub Actions del commit c944c0a](https://github.com/nahuperalta12/estrella_gestion/actions/runs/44812373344) finalizó correctamente. Ese flujo inicia Supabase aislado, aplica las migraciones y ejecuta `supabase test db`; por lo tanto, la ausencia de Docker en esta computadora ya no impide ejecutar esa suite. Las observaciones anteriores que indican que las pruebas pgTAP no se habían ejecutado describen el estado previo a esa ejecución. Sigue pendiente verificar concurrencia con conexiones independientes y el alta de cuentas mediante Auth, además de cualquier validación necesaria antes de modificar el proyecto remoto.
+
 En la comprobación del 19 de noviembre de 2026, el proyecto remoto vinculado contenía la tabla `public.profiles`, el tipo `app_role`, la función `is_active_admin` y las políticas de perfiles, pero su historial de migraciones no registraba `202611190001`. Esto es compatible con una aplicación manual previa; todavía debe compararse la definición completa antes de marcarla como aplicada.
 
 La simulación `supabase db push --remote --dry-run` indicó que intentaría aplicar las migraciones 001, 002 y 003. Ejecutar ese comando sin `--dry-run` en ese estado intentaría recrear objetos existentes. No se reparó el historial ni se aplicaron las migraciones automáticamente.
