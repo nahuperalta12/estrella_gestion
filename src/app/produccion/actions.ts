@@ -16,7 +16,7 @@ export async function createAssignment(_:State,form:FormData):Promise<State> {
   const p=z.object({key:z.string().uuid(),worker:z.string().uuid(),product:z.string().uuid(),quantity:z.coerce.number().int().positive().max(2147483647),rate:z.coerce.number().finite().min(0).max(999999999999).refine(n=>Math.abs(n*100-Math.round(n*100))<1e-6),due:z.union([z.literal(""),z.iso.date()]),notes:z.string().trim().max(500)}).safeParse({key:form.get("key"),worker:form.get("worker"),product:form.get("product"),quantity:form.get("quantity"),rate:form.get("rate"),due:form.get("due"),notes:form.get("notes")});
   if(!p.success) return {message:"Revisá la asignación, la cantidad y la tarifa."};
   const db=await createClient(), d=p.data; const {error}=await db.rpc("create_production_assignment",{p_key:d.key,p_worker:d.worker,p_product:d.product,p_quantity:d.quantity,p_rate:d.rate,p_due:d.due || null,p_notes:d.notes});
-  if(error) return {message:"No se pudo asignar. Verificá que el producto tenga receta y que la colaboradora esté activa."};
+  if(error) return {message:"No se pudo asignar. Verificá que el producto tenga receta y que el colaborador esté activo."};
   revalidatePath("/produccion"); return {ok:true,message:"Asignación creada."};
 }
 export async function recordProduction(_:State,form:FormData):Promise<State> {
@@ -25,6 +25,15 @@ export async function recordProduction(_:State,form:FormData):Promise<State> {
   const db=await createClient(), d=p.data; const {error}=await db.rpc("record_production",{p_key:d.key,p_assignment:d.assignment,p_date:d.date,p_quantity:d.quantity,p_notes:d.notes});
   if(error) return {message:"No se pudo registrar. Verificá la cantidad pendiente y los materiales disponibles en tu custodia."};
   revalidatePath("/produccion"); revalidatePath("/entregas"); return {ok:true,message:"Producción registrada."};
+}
+export async function recordOwnerProduction(_:State,form:FormData):Promise<State> {
+  const p=z.object({key:z.string().uuid(),product:z.string().uuid(),date:z.iso.date(),quantity:z.coerce.number().int().positive().max(2147483647),notes:z.string().trim().max(500)}).safeParse({key:form.get("key"),product:form.get("product"),date:form.get("date"),quantity:form.get("quantity"),notes:form.get("notes")});
+  if(!p.success) return {message:"Revisá el producto, la fecha y la cantidad."};
+  const db=await createClient(),d=p.data;
+  const {error}=await db.rpc("record_owner_production",{p_key:d.key,p_product:d.product,p_date:d.date,p_quantity:d.quantity,p_notes:d.notes});
+  if(error) return {message:"No se pudo registrar. Verificá que el producto tenga receta y que haya materiales activos suficientes en el depósito."};
+  revalidatePath("/produccion"); revalidatePath("/inventario"); revalidatePath("/");
+  return {ok:true,message:"Tu producción quedó registrada, sin generar remuneración."};
 }
 export async function receiveFinished(_:State,form:FormData):Promise<State> {
   const p=z.object({key:z.string().uuid(),assignment:z.string().uuid(),date:z.iso.date(),quantity:z.coerce.number().int().positive().max(2147483647),notes:z.string().trim().max(500)}).safeParse({key:form.get("key"),assignment:form.get("assignment"),date:form.get("date"),quantity:form.get("quantity"),notes:form.get("notes")});

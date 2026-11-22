@@ -28,7 +28,7 @@ export async function GET(_:Request,{params}:{params:Promise<{tipo:string}>}) {
       rows=data.map(m=>{const raw=m.warehouse_balances;const balance=Array.isArray(raw) ? raw[0] : raw; return [m.name,m.unit,(balance as Row|null)?.quantity ?? "",m.minimum_stock,m.active ? "Sí":"No"];});
     } else if(tipo==="produccion") {
       const data=await readAll((from,to)=>db.from("production_records").select("id,produced_on,collaborator_id,assignment_id,quantity,unit_rate,earned,notes").order("id").range(from,to));
-      headers=["Fecha","Colaboradora ID","Asignación ID","Cantidad","Tarifa ARS","Devengado ARS","Observaciones"];
+      headers=["Fecha","Colaborador ID","Asignación ID","Cantidad","Tarifa ARS","Devengado ARS","Observaciones"];
       rows=data.map(r=>[r.produced_on,r.collaborator_id,r.assignment_id,r.quantity,r.unit_rate,r.earned,r.notes]);
     } else if(tipo==="pagos") {
       const data=await readAll((from,to)=>db.from("collaborator_payments").select("id,collaborator_id,paid_on,amount,method,notes").order("id").range(from,to));
@@ -39,7 +39,7 @@ export async function GET(_:Request,{params}:{params:Promise<{tipo:string}>}) {
         if(error || !batch) throw new Error("No se pudo consultar el estado de los pagos.");
         reversals.push(...batch);
       }
-      headers=["Fecha","Colaboradora ID","Importe ARS","Medio","Observaciones","Revertido","Fecha reversión","Motivo reversión"];
+      headers=["Fecha","Colaborador ID","Importe ARS","Medio","Observaciones","Revertido","Fecha reversión","Motivo reversión"];
       const byPayment=new Map(reversals.map(r=>[r.collaborator_payment_id,r]));
       rows=data.map(r=>{const rev=byPayment.get(r.id);return [r.paid_on,r.collaborator_id,r.amount,r.method,r.notes,rev ? "Sí":"No",rev?.reversed_on,rev?.reason];});
     } else {

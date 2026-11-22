@@ -7,7 +7,7 @@ const sections=[
   {title:"Proveedores",description:"Cargar y mantener datos de contacto y estado.",href:"/proveedores#nuevo-proveedor",action:"Administrar proveedores"},
   {title:"Clientes",description:"Cargar clientes, editar teléfonos y dar de baja sin borrar su historial.",href:"/catalogos#nuevo-cliente",action:"Administrar clientes"},
   {title:"Productos",description:"Cargar modelos, tamaños, colores y precios sugeridos.",href:"/catalogos#nuevo-producto",action:"Administrar productos"},
-  {title:"Colaboradoras",description:"Crear cuentas, editar nombres y activar o desactivar el acceso.",href:"/colaboradoras",action:"Administrar colaboradoras"},
+  {title:"Colaboradores",description:"Crear cuentas, editar nombres y activar o desactivar el acceso.",href:"/colaboradores",action:"Administrar colaboradores"},
   {title:"Recetas y asignaciones",description:"Cargar consumos por producto y asignar trabajos con tarifa.",href:"/produccion",action:"Ir a producción"},
   {title:"Compras",description:"Registrar compras, su recepción y los pagos realizados.",href:"/compras",action:"Ir a compras"},
   {title:"Pedidos",description:"Registrar pedidos, cobros y entregas a clientes.",href:"/pedidos",action:"Ir a pedidos"},

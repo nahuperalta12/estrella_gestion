@@ -6,7 +6,7 @@ Aplicación interna de Estrella Carnaval en desarrollo. **Todavía no está list
 
 Se necesita Node.js 20.9 o posterior, npm y un proyecto Supabase. Copiar `.env.example` a `.env.local` y completar la URL y la clave publicable del proyecto.
 
-Para habilitar la creación de cuentas de colaboradoras desde la web, completar también `SUPABASE_SERVICE_ROLE_KEY` con una clave de servidor del mismo proyecto. Esta clave es privilegiada: debe guardarse solo en el entorno del servidor, nunca en una variable `NEXT_PUBLIC_`, en el código ni en Git. Sin ella, se pueden consultar y modificar perfiles existentes, pero la creación de cuentas desde la web estará deshabilitada.
+Para habilitar la creación de cuentas de colaboradores desde la web, completar también `SUPABASE_SERVICE_ROLE_KEY` con una clave de servidor del mismo proyecto. Esta clave es privilegiada: debe guardarse solo en el entorno del servidor, nunca en una variable `NEXT_PUBLIC_`, en el código ni en Git. Sin ella, se pueden consultar y modificar perfiles existentes, pero la creación de cuentas desde la web estará deshabilitada.
 
 ```sh
 npm ci
@@ -34,9 +34,9 @@ values ('UUID_DEL_USUARIO', 'Nombre', 'admin', true);
 
 5. En Authentication > URL Configuration definir la URL de producción y únicamente las redirecciones necesarias. Incluir localhost solo para desarrollo.
 
-La administración puede acceder a **Cargas y ABM** para crear y mantener datos. El alta de colaboradoras crea una cuenta en Auth desde el servidor y un perfil con rol de colaboradora; la contraseña inicial se entrega por un canal seguro. Si se interrumpe la operación y la aplicación no puede verificar su resultado, revisar el correo en el panel de Supabase antes de reintentar. No hay flujo de invitación ni recuperación de contraseña implementado.
+La administración puede acceder a **Cargas y ABM** para crear y mantener datos. El alta de colaboradores crea una cuenta en Auth desde el servidor y un perfil con rol de colaborador; la contraseña inicial se entrega por un canal seguro. Si se interrumpe la operación y la aplicación no puede verificar su resultado, revisar el correo en el panel de Supabase antes de reintentar. No hay flujo de invitación ni recuperación de contraseña implementado.
 
-Desactivar una colaboradora bloquea su acceso a los datos protegidos de la aplicación y conserva su historial. No desactiva la cuenta de Auth; para impedir también el inicio de sesión, deshabilitar la cuenta en Supabase. El ABM de colaboradoras no permite cambiar roles ni modificar administradores.
+Desactivar un colaborador bloquea su acceso a los datos protegidos de la aplicación y conserva su historial. No desactiva la cuenta de Auth; para impedir también el inicio de sesión, deshabilitar la cuenta en Supabase. El ABM de colaboradores no permite cambiar roles ni modificar administradores.
 
 ## Pruebas y despliegue
 

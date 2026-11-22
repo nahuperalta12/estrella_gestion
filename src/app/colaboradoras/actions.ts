@@ -17,7 +17,7 @@ export async function createCollaborator(_:CollaboratorState,form:FormData):Prom
   const parsed=z.object({name:z.string().trim().min(1).max(100),email:z.string().trim().email().max(254),password:z.string().min(12).max(128)}).safeParse({name:form.get("name"),email:form.get("email"),password:form.get("password")});
   if(!parsed.success) return {message:"Revisá el nombre, el correo y la contraseña (mínimo 12 caracteres)."};
   const db=await authenticatedAdmin();
-  if(!db) return {message:"Tu cuenta no tiene permiso para crear colaboradoras."};
+  if(!db) return {message:"Tu cuenta no tiene permiso para crear colaboradores."};
   const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
   if(!key || !url) return {message:"El alta de cuentas no está configurada en el servidor. Consultá las instrucciones de administración."};
@@ -36,7 +36,7 @@ export async function createCollaborator(_:CollaboratorState,form:FormData):Prom
     // An RPC response can fail after commit; inspect before compensating.
     try {
       const lookup=await privileged.from("profiles").select("id,role").eq("id",userId).maybeSingle();
-      if(!lookup.error && lookup.data?.role==="collaborator") { revalidatePath("/colaboradoras"); return {ok:true,message:"Colaboradora creada. Entregá las credenciales por un canal seguro."}; }
+      if(!lookup.error && lookup.data?.role==="collaborator") { revalidatePath("/colaboradores"); return {ok:true,message:"Colaborador creado. Entregá las credenciales por un canal seguro."}; }
       if(!lookup.error && !lookup.data) {
         const removed=await privileged.auth.admin.deleteUser(userId);
         if(!removed.error) return {message:"No se pudo crear el perfil y la cuenta nueva se retiró. Revisá las migraciones y volvé a intentar."};
@@ -44,13 +44,13 @@ export async function createCollaborator(_:CollaboratorState,form:FormData):Prom
     } catch { /* The account must be inspected if cleanup cannot be verified. */ }
     return {message:"La cuenta pudo crearse pero no se pudo confirmar el perfil. Revisá ese correo en el panel de Supabase antes de volver a intentar."};
   }
-  revalidatePath("/colaboradoras"); return {ok:true,message:"Colaboradora creada. Entregá las credenciales por un canal seguro."};
+  revalidatePath("/colaboradores"); return {ok:true,message:"Colaborador creado. Entregá las credenciales por un canal seguro."};
 }
 export async function updateCollaborator(_:CollaboratorState,form:FormData):Promise<CollaboratorState> {
   const parsed=z.object({id:z.string().uuid(),name:z.string().trim().min(1).max(100),active:z.boolean()}).safeParse({id:form.get("id"),name:form.get("name"),active:form.get("active")==="on"});
   if(!parsed.success) return {message:"Revisá el nombre."};
-  const db=await authenticatedAdmin(); if(!db) return {message:"Tu cuenta no tiene permiso para modificar colaboradoras."};
+  const db=await authenticatedAdmin(); if(!db) return {message:"Tu cuenta no tiene permiso para modificar colaboradores."};
   const {error}=await db.rpc("update_collaborator",{p_user:parsed.data.id,p_name:parsed.data.name,p_active:parsed.data.active});
   if(error) return {message:"No se pudo guardar. Revisá la conexión y los permisos."};
-  revalidatePath("/colaboradoras"); revalidatePath("/"); return {ok:true,message:"Colaboradora actualizada."};
+  revalidatePath("/colaboradores"); revalidatePath("/"); return {ok:true,message:"Colaborador actualizado."};
 }

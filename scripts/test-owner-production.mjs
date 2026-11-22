@@ -1,0 +1,41 @@
+import {PGlite} from "@electric-sql/pglite";
+import {readFile,readdir} from "node:fs/promises";
+import assert from "node:assert/strict";
+
+const db=new PGlite();
+const admin="b5000000-0000-0000-0000-000000000001", worker="b5000000-0000-0000-0000-000000000002";
+try {
+  await db.exec(`create role anon nologin; create role authenticated nologin;
+    create schema auth; create table auth.users(id uuid primary key,email text);
+    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+    grant usage on schema auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon;`);
+  for(const name of (await readdir("supabase/migrations")).filter(n=>n.endsWith(".sql")).sort()) await db.exec(await readFile(`supabase/migrations/${name}`,"utf8"));
+  await db.query("insert into auth.users values ($1,'admin@invalid.test'),($2,'worker@invalid.test')",[admin,worker]);
+  await db.query("insert into public.profiles(id,display_name,role,active) values ($1,'Admin','admin',true),($2,'Worker','collaborator',true)",[admin,worker]);
+  await db.exec("set role authenticated");
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[admin]);
+  const m1=(await db.query("select public.create_material('Wire','unit',0) as id")).rows[0].id;
+  const m2=(await db.query("select public.create_material('Glue','g',0) as id")).rows[0].id;
+  await db.query("select public.adjust_warehouse_stock('b5000000-0000-0000-0000-000000000003',$1,10,'initial')",[m1]);
+  await db.query("select public.adjust_warehouse_stock('b5000000-0000-0000-0000-000000000004',$1,6,'initial')",[m2]);
+  const product=(await db.query("select public.save_product(null,'Feather','','','',0,true) as id")).rows[0].id;
+  await db.query("select public.create_recipe($1,$2::jsonb)",[product,JSON.stringify([{material:m1,quantity:2},{material:m2,quantity:1}])]);
+  const key="b5000000-0000-0000-0000-000000000005";
+  const produce=(k,qty)=>db.query("select public.record_owner_production($1,$2,'2026-01-01',$3,'own') as id",[k,product,qty]);
+  const id=(await produce(key,3)).rows[0].id;
+  assert.equal((await produce(key,3)).rows[0].id,id);
+  await assert.rejects(produce(key,2),/operation key already used/);
+  assert.equal(Number((await db.query("select quantity from public.warehouse_balances where material_id=$1",[m1])).rows[0].quantity),4);
+  assert.equal(Number((await db.query("select quantity from public.warehouse_balances where material_id=$1",[m2])).rows[0].quantity),3);
+  assert.equal(Number((await db.query("select produced from public.owner_production_summary")).rows[0].produced),3);
+  assert.equal(Number((await db.query("select earned from public.production_records where id=$1",[id])).rows[0].earned),0);
+  assert.equal(Number((await db.query("select count(*) as n from public.production_consumptions where production_id=$1",[id])).rows[0].n),2);
+  assert.equal(Number((await db.query("select count(*) as n from public.financial_transactions")).rows[0].n),0);
+  await assert.rejects(produce("b5000000-0000-0000-0000-000000000006",4),/insufficient stock/);
+  assert.equal(Number((await db.query("select count(*) as n from public.production_records")).rows[0].n),1);
+  assert.equal(Number((await db.query("select quantity from public.warehouse_balances where material_id=$1",[m1])).rows[0].quantity),4);
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)",[worker]);
+  await assert.rejects(produce("b5000000-0000-0000-0000-000000000007",1),/access denied/);
+  assert.equal(Number((await db.query("select produced from public.owner_production_summary")).rows[0].produced),0);
+  console.log("Producción propia: permisos, stock, reintentos y remuneración verificados.");
+} finally {await db.close();}

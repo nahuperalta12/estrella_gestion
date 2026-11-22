@@ -1,5 +1,9 @@
 # Estado de migraciones
 
+## Producción propia del administrador
+
+La migración 025 se aplicó al proyecto vinculado «Estrella Gestion». Permite al administrador registrar su propia producción con tarifa cero, descontando materiales del depósito según la receta y manteniendo la recepción de producto terminado como paso separado. Las pruebas aisladas comprueban permisos, consumo, reintentos y ausencia de remuneración. La prueba pgTAP correspondiente se ejecuta en GitHub Actions.
+
 ## Edición de pedidos
 
 La migración 024 se aplicó al proyecto vinculado «Estrella Gestion». Añade la edición administrativa de pedidos y una auditoría de sus cambios, y protege la coherencia con los cobros y las entregas existentes. Las pruebas aisladas verifican las restricciones, permisos, reintentos y tratamiento de registros históricos. La prueba pgTAP de esta migración se ejecuta en el flujo de GitHub Actions.
