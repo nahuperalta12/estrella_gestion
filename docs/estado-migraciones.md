@@ -1,12 +1,16 @@
 # Estado de migraciones
 
+## Edición de pedidos
+
+La migración 024 se aplicó al proyecto vinculado «Estrella Gestion». Añade la edición administrativa de pedidos y una auditoría de sus cambios, y protege la coherencia con los cobros y las entregas existentes. Las pruebas aisladas verifican las restricciones, permisos, reintentos y tratamiento de registros históricos. La prueba pgTAP de esta migración se ejecuta en el flujo de GitHub Actions.
+
 ## Aplicación remota e importación de la hoja 2027
 
 Se verificó la equivalencia de la fundación existente, se registró la migración 001 en el historial y se aplicaron las migraciones 002 a 023 en el proyecto vinculado «Estrella Gestion», usando `--skip-vault`. La comprobación posterior encontró 23 migraciones registradas y las tablas y funciones comerciales esperadas. No se recreó `profiles`.
 
 Se importó exclusivamente la hoja `2027` de la planilla facilitada y se verificó el resultado en la base. Las señas tienen fecha provisoria del pedido; un cobro adicional conserva fecha desconocida y no genera un movimiento de caja fechado. Las entregas históricas sin fecha no descuentan stock actual. Los pedidos mixtos conservan su descripción original sin desglose de inventario. Los detalles comerciales y las aclaraciones se conservan fuera del repositorio.
 
-La migración 023 y la importación pasaron pruebas aisladas, incluyendo repetición sin duplicados y reversión completa ante un error. Las migraciones 001–022 pasaron previamente la suite pgTAP de Supabase en CI; la prueba pgTAP nueva de 023 y las pruebas de concurrencia aún no se ejecutaron en una instancia real aislada. La configuración local apunta al proyecto vinculado, pero no se verificó la configuración de producción de Vercel.
+La migración 023 y la importación pasaron pruebas aisladas, incluyendo repetición sin duplicados y reversión completa ante un error. Las migraciones 001–023 también pasaron la suite pgTAP de Supabase en CI; las pruebas de concurrencia aún no se ejecutaron en una instancia real aislada. La configuración local apunta al proyecto vinculado, pero no se verificó la configuración de producción de Vercel.
 
 ## Actualización del 20 de noviembre de 2026
 
